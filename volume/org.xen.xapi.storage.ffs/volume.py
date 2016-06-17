@@ -13,6 +13,7 @@ import xapi.storage.api.volume
 from xapi.storage import log
 import xapi.storage.libs.poolhelper
 import xapi
+import ffs
 
 # Attempts to create an empty regular file with the given prefix and suffix
 # If the name "prefix.suffix" exists, this will try "prefix.%d.suffix" until
@@ -92,7 +93,7 @@ class Implementation(xapi.storage.api.volume.Volume_skeleton):
             "read_write": True,
             "virtual_size": size,
             "physical_utilisation": 0,
-            "uri": [DP_URI_PREFIX + new_name],
+            "uri": [ffs.DP_URI_PREFIX + new_name],
             "keys": {}
         }
 
@@ -165,7 +166,7 @@ class Implementation(xapi.storage.api.volume.Volume_skeleton):
             "read_write": True,
             "virtual_size": virtual_size,
             "physical_utilisation": physical_utilisation,
-            "uri": [DP_URI_PREFIX + path],
+            "uri": [ffs.DP_URI_PREFIX + path],
             "keys": {},
         }
 
@@ -354,7 +355,7 @@ class Implementation(xapi.storage.api.volume.Volume_skeleton):
             "read_write": True,
             "virtual_size": size,
             "physical_utilisation": 0,
-            "uri": [DP_URI_PREFIX + new_name],
+            "uri": [ffs.DP_URI_PREFIX + new_name],
             "keys": {}
         }
 
@@ -387,7 +388,7 @@ class Implementation(xapi.storage.api.volume.Volume_skeleton):
             "read_write": True,
             "virtual_size": virtual_size,
             "physical_utilisation": physical_utilisation,
-            "uri": [DP_URI_PREFIX + path],
+            "uri": [ffs.DP_URI_PREFIX + path],
             "keys": keys
         }
 
