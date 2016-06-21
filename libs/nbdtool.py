@@ -4,16 +4,19 @@ import os
 import signal
 import errno
 import pickle
+import subprocess
+import time
+from xapi.storage.libs import log
 
 """
 Use "nbd-tool" to mirror disks between servers.
 """
 
-persist_root = "/tmp/persist-nbdtool/"
-
+persist_root = "/var/run/nonpersistent/persist-nbdtool/"
+nbd_tool = "/usr/bin/nbd-tool"
 
 def path_to_persist(mirror):
-    return persist_root + mirror.pid
+    return "%smirror.%d" % (persist_root,mirror.pid)
 
 """
 ToDo: what is persist_foor?
@@ -26,10 +29,11 @@ class Mirror:
 
     """An active nbd mirror"""
 
-    def __init__(self, primary, secondary, pid):
+    def __init__(self, primary, secondary, pid, port):
         self.primary = primary
         self.secondary = secondary
         self.pid = pid
+        self.port = port
         path = path_to_persist(self)
         to_create = os.path.dirname(path)
         try:
@@ -61,9 +65,34 @@ def find(dbg, primary, secondary):
     for filename in used:
         with open(persist_root + filename) as file:
             mirror = pickle.load(file)
+            log.debug("file=%s" % file)
             if mirror.primary == primary and mirror.secondary == secondary:
                 return mirror
     return None
+
+def find_port(dbg):
+    """Find an unused local port for nbd-tool to serve on"""
+    used = set()
+    
+    try:
+        used = set(os.listdir(persist_root))
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            pass
+        else:
+            raise
+    def getport(filename):
+        with open(persist_root + filename) as file:
+            m = pickle.load(file)
+            return m.port
+    myport = -1
+    ports = [getport(f) for f in used]
+    for port in range(10809,10909):
+        if port not in ports:
+            myport = port
+            break
+    
+    return myport
 
 
 def create(dbg, primary, secondary):
@@ -72,6 +101,15 @@ def create(dbg, primary, secondary):
     existing = find(dbg, primary, secondary)
     if existing:
         return existing
+
+    port = find_port(dbg)
+
+    args = [nbd_tool, "mirror", primary, secondary, "--port", "%d" % port]
+    log.debug(args)
+    proc = subprocess.Popen(args)
+    time.sleep(1)
+    return Mirror(primary,secondary,proc.pid,port)
+
     """
     TODO: spawn nbd-client
     try:
